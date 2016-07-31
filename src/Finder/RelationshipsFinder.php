@@ -37,11 +37,11 @@ class RelationshipsFinder
 
     protected function hydrateResult(Result $result)
     {
-        $repo = $this->em->getRepository($this->className);
+        $repo = $this->em->getRepository($this->relationshipMetadata->getTargetEntity());
         $instances = [];
 
         foreach ($result->records() as $record) {
-            $instances[] = $repo->hydrate($record, true, 'end', $this->className, true, true);
+            $instances[] = $repo->hydrateRecord($record, 'end');
         }
 
         return $instances;

@@ -66,6 +66,13 @@ class GithubUser
      */
     private $followedBy;
 
+    /**
+     * @var Organization[]
+     *
+     * @OGM\Relationship(targetEntity="Organization", type="MEMBER_OF", direction="OUTGOING", mappedBy="members", collection=true)
+     */
+    private $organizations;
+
     public function __construct($login)
     {
         $this->login = $login;
@@ -73,6 +80,7 @@ class GithubUser
         $this->starred = new Collection();
         $this->follows = new Collection();
         $this->followedBy = new Collection();
+        $this->organizations = new Collection();
     }
 
     /**
@@ -139,5 +147,19 @@ class GithubUser
         return $this->followedBy;
     }
 
+    /**
+     * @param \GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\Organization $organization
+     */
+    public function addOrganization(Organization $organization)
+    {
+        $this->organizations->add($organization);
+    }
 
+    /**
+     * @return \GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\Organization[]
+     */
+    public function getOrganizations()
+    {
+        return $this->organizations;
+    }
 }

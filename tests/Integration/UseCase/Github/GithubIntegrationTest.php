@@ -20,6 +20,20 @@ class GithubIntegrationTest extends IntegrationTestCase
         $this->assertGraphExist('(u:User {login:"ikwattro", description:"neo4j consultant"})');
     }
 
+    public function testSimpleUserIsFetched()
+    {
+        $this->clearDb();
+        $this->client->run("CREATE (n:User {login:'ikwattro'})-[:MEMBER_OF]->(o:Organization {name:'GraphAware'})-[:IN_COUNTRY]->(c:Country {name:'UK'}),
+        (n2:User {login:'alenegro81'})
+        MERGE (n2)-[:MEMBER_OF]->(o)");
+        /** @var GithubUser $user */
+        $user = $this->em->getRepository(GithubUser::class)->findOneBy('login', 'ikwattro');
+        $this->assertCount(1, $user->getOrganizations());
+        $this->assertEquals("ikwattro", $user->getOrganizations()[0]->getMembers()[0]->getLogin());
+        $this->assertEquals("ikwattro", $user->getOrganizations()[0]->getMembers()[0]->getOrganizations()[0]->getMembers()[0]->getLogin());
+        $this->assertInstanceOf(LazyRelationshipCollection::class, $user->getOwnedRepositories());
+    }
+
     public function testSimpleUserIsSavedAndUpdatedPropertiesAreUpdated()
     {
         $this->clearDb();
@@ -47,7 +61,7 @@ class GithubIntegrationTest extends IntegrationTestCase
         $ikwattro = $this->em->getRepository(GithubUser::class)->findOneBy('login', 'ikwattro');
         $this->assertEquals('ikwattro', $ikwattro->getLogin());
         $this->assertEquals('neo4j consultant', $ikwattro->getDescription());
-        $this->assertTrue($ikwattro->getOwnedRepositories() instanceof LazyRelationshipCollection);
+        //$this->assertTrue($ikwattro->getOwnedRepositories() instanceof LazyRelationshipCollection);
         $ikwattro->setDescription("neo4j developer");
         $this->em->flush();
         $this->assertGraphExist('(u:User {login:"ikwattro", description:"neo4j developer"})');

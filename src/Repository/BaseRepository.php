@@ -390,10 +390,117 @@ class BaseRepository
     {
         $entities = [];
         foreach ($result->records() as $record) {
-            $entities[] = $this->hydrate($record);
+            $entities[] = $this->hydrateRecord($record);
         }
 
         return $entities;
+    }
+
+    public function hydrateRecord(Record $record, $identifier = 'n')
+    {
+        $node = $record->get($identifier);
+        $nodeId = $node->identity();
+        if (null !== $entity = $this->entityManager->getUnitOfWork()->getEntityById($nodeId)) {
+            return $entity;
+        }
+        $baseInstance = $this->hydrateNodeRecord($record->get($identifier));
+        $this->entityManager->getUnitOfWork()->addManaged($baseInstance);
+        $this->hydrateNonLazyRelationshipReferences($baseInstance, $record);
+
+        return $baseInstance;
+    }
+
+    private function hydrateNonLazyRelationshipReferences($object, Record $record)
+    {
+        foreach ($this->classMetadata->getSimpleRelationships(false) as $relationship) {
+            $targetClass = $relationship->getTargetEntity();
+            $targetMetadata = $this->entityManager->getClassMetadata($targetClass);
+            $relId = sprintf('rel_%s_%s', strtolower($relationship->getPropertyName()), strtolower($relationship->getType()));
+            if (null === $record->get($relId, null)) {
+                continue;
+            }
+            $iterator = $relationship->isCollection() ? $record->get($relId) : array($record->get($relId));
+            foreach ($iterator as $map) {
+                $otherNodeIdentifier = $relationship->isOutgoing() ? "end" : "start";
+                /** @var Node $otherNode */
+                $otherNode = $map[$otherNodeIdentifier];
+                $associatedObject = $this->hydrateNodeRecord($otherNode, $targetClass);
+                $this->addManaged($associatedObject);
+                if (!$relationship->isCollection()) {
+                    $relationship->setValue($object, $associatedObject);
+                } else {
+                    $relationship->initializeCollection($object);
+                    $relationship->addToCollection($object, $associatedObject);
+                    /** @var RelationshipMetadata $inversedRelationship */
+                    $inversedRelationship = $targetMetadata->getAssociationMappedByTargetField($relationship->getPropertyName());
+                    if (null !== $inversedRelationship) {
+                        if ($inversedRelationship->isCollection() && !$inversedRelationship->isLazy()) {
+                            $inversedRelationship->initializeCollection($associatedObject);
+                            $inversedRelationship->addToCollection($associatedObject, $object);
+                        } else if ($inversedRelationship->isLazy()) {
+                            $inversedRelationship->addToCollection($associatedObject, $object);
+                        } else {
+                            $inversedRelationship->setValue($associatedObject, $object);
+                        }
+                    }
+                }
+                $this->manageRelationshipReference($object, $associatedObject, $relationship);
+            }
+        }
+    }
+
+    private function manageRelationshipReference($objectA, $objectB, RelationshipMetadata $relationshipMetadata)
+    {
+        $this->entityManager->getUnitOfWork()->addManagedRelationshipReference($objectA, $objectB, $relationshipMetadata->getPropertyName(), $relationshipMetadata);
+    }
+
+    private function addManaged($object)
+    {
+        $this->entityManager->getUnitOfWork()->addManaged($object);
+    }
+
+    private function hydrateNodeRecord(Node $node, $className = null)
+    {
+        $class = $className !== null ? $className : $this->className;
+        $classMetadata = $this->entityManager->getClassMetadata($class);
+        $nodeId = $node->identity();
+        if (null !== $entity = $this->entityManager->getUnitOfWork()->getEntityById($nodeId)) {
+            return $entity;
+        }
+        $instance = $classMetadata->newInstance();
+
+        // Set properties from the node record
+        foreach ($classMetadata->getPropertiesMetadata() as $propertyMetadata) {
+            if ($node->hasValue($propertyMetadata->getPropertyName())) {
+                $propertyMetadata->setValue($instance, $node->value($propertyMetadata->getPropertyName()));
+            }
+        }
+
+        // Set the node id
+        $classMetadata->setId($instance, $nodeId);
+
+        // initialize collections on non-lazy relationships
+        foreach ($classMetadata->getNonLazyRelationships() as $relationship) {
+            if ($relationship->isCollection()) {
+                $relationship->initializeCollection($instance);
+            }
+        }
+
+        // initialize lazy for simple relationships
+
+        foreach ($classMetadata->getLazyRelationships(false) as $relationship) {
+            $lazy = new LazyRelationshipCollection(
+                $this->entityManager,
+                $instance,
+                $relationship->getTargetEntity(),
+                $relationship
+            );
+            //$lazy->addInit($instance);
+            $relationship->setValue($instance, $lazy);
+        }
+
+
+        return $instance;
     }
 
     public function hydrate(Record $record, $andCheckAssociations = true, $identifier = 'n', $className = null, $andAddLazyLoad = false, $considerAllLazy = false)

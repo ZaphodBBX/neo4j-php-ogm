@@ -290,7 +290,7 @@ final class NodeEntityMetadata extends GraphEntityMetadata
     {
         foreach ($this->relationships as $relationship) {
             if ($relationship->hasMappedByProperty() && $relationship->getMappedByProperty() === $assocName) {
-                return $relationship->getPropertyName();
+                return $relationship;
             }
         }
 

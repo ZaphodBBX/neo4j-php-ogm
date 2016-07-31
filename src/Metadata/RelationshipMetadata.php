@@ -206,6 +206,8 @@ final class RelationshipMetadata
             return;
         }
 
+        throw new \RuntimeException("dunno man !");
+
         //throw new \RuntimeException(sprintf('Unexpected initial value in %s', $this->className));
     }
 
@@ -221,6 +223,12 @@ final class RelationshipMetadata
 
         /** @var Collection $coll */
         $coll = $this->getValue($object);
+
+        if ($coll instanceof LazyRelationshipCollection) {
+            $coll->addInit($value);
+            return;
+        }
+
         $toAdd = true;
         $oid2 = spl_object_hash($value);
         foreach ($coll->toArray() as $el) {
@@ -272,5 +280,15 @@ final class RelationshipMetadata
     {
         $this->reflectionProperty->setAccessible(true);
         $this->reflectionProperty->setValue($object, $value);
+    }
+
+    public function isOutgoing()
+    {
+        return $this->getDirection() === "OUTGOING";
+    }
+
+    public function isIncoming()
+    {
+        return $this->getDirection() === "INCOMING";
     }
 }

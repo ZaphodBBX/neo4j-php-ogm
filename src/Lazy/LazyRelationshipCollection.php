@@ -44,30 +44,31 @@ class LazyRelationshipCollection extends AbstractLazyCollection
         $this->baseEntityClass = get_class($baseEntity);
         $this->relationshipMetadata = $relationshipMetadata;
         $this->baseInstance = $baseEntity;
+        if (null !== $initialEntity) {
+            $this->collection[] = $initialEntity;
+        }
     }
 
     protected function doInitialize()
     {
-        $i = 0;
         $instances = $this->finder->find($this->baseId);
+        $oidKeys = [];
+        foreach ($this->collection as $elt) {
+            $oidKeys[] = spl_object_hash($elt);
+        }
         foreach ($instances as $instance) {
-            $cm = $this->em->getClassMetadata(get_class($instance));
-            if (!$this->collection->contains($instance)) {
+            if (!in_array(spl_object_hash($instance), $oidKeys)) {
                 if (!$this->relationshipMetadata->isRelationshipEntity()) {
                     $this->em->getUnitOfWork()->addManagedRelationshipReference($this->baseInstance, $instance, $this->relationshipMetadata->getPropertyName(), $this->relationshipMetadata);
                 }
-                $repo = $this->em->getRepository(get_class($this->baseInstance));
-                $repo->setInversedAssociation($this->baseInstance, $instance, $this->relationshipMetadata->getPropertyName());
                 $this->collection[] = $instance;
-                ++$i;
             }
         }
     }
 
-    public function addInit($element)
+    public function addInit($elt)
     {
-        $this->collection->add($element);
+        $this->collection[] = $elt;
     }
-
 
 }
