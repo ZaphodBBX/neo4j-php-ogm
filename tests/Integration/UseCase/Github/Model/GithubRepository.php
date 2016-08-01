@@ -81,4 +81,11 @@ class GithubRepository
     {
         return $this->writtenLanguages;
     }
+
+    public function addLangage(Language $language, $linesOfCode)
+    {
+        $writtenIn = new WrittenIn($this, $language, $linesOfCode);
+        $this->writtenLanguages->add($writtenIn);
+        $language->addRepositoryWrittenIn($writtenIn);
+    }
 }

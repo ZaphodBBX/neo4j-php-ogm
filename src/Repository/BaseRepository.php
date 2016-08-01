@@ -299,7 +299,7 @@ class BaseRepository
             $query .= ', ' . implode(', ', $assocReturns);
         }
 
-        //print_r($query);
+        print_r($query);
 
         $parameters = [$key => $value];
         $result = $this->entityManager->getDatabaseDriver()->run($query, $parameters);
@@ -406,6 +406,7 @@ class BaseRepository
         $baseInstance = $this->hydrateNodeRecord($record->get($identifier));
         $this->entityManager->getUnitOfWork()->addManaged($baseInstance);
         $this->hydrateFetchedelationshipReferences($baseInstance, $record);
+        $this->hydrateFetchedelationshipReferences($baseInstance, $record);
 
         return $baseInstance;
     }
@@ -423,12 +424,28 @@ class BaseRepository
         }
     }
 
+    private function hydrateFetchedRelationshipEntities($object, Record $record)
+    {
+        foreach ($this->classMetadata->getRelationshipEntities() as $relationship) {
+            $targetClass = $relationship->getTargetEntity();
+            $targetMetadata = $this->entityManager->getClassMetadata($targetClass);
+            $relId = sprintf('rel_%s_%s', strtolower($relationship->getPropertyName()), strtolower($relationship->getType()));
+            var_dump($relId);
+            if (null === $record->get($relId, null)) {
+                continue;
+            }
+        }
+    }
+
     private function hydrateFetchedelationshipReferences($object, Record $record)
     {
         foreach ($this->classMetadata->getSimpleRelationships(false) as $relationship) {
             $targetClass = $relationship->getTargetEntity();
             $targetMetadata = $this->entityManager->getClassMetadata($targetClass);
             $relId = sprintf('rel_%s_%s', strtolower($relationship->getPropertyName()), strtolower($relationship->getType()));
+            if (!$relationship->isCollection()) {
+                $relId = $relationship->getPropertyName();
+            }
             if (null === $record->get($relId, null)) {
                 continue;
             }
@@ -436,13 +453,12 @@ class BaseRepository
             foreach ($iterator as $map) {
                 $otherNodeIdentifier = $relationship->isOutgoing() ? "end" : "start";
                 /** @var Node $otherNode */
-                $otherNode = $map[$otherNodeIdentifier];
+                $otherNode = $relationship->isCollection() ? $map[$otherNodeIdentifier] : $map;
                 $associatedObject = $this->hydrateNodeRecord($otherNode, $targetClass);
                 $this->addManaged($associatedObject);
                 if (!$relationship->isCollection()) {
                     $relationship->setValue($object, $associatedObject);
                 } else {
-                    var_dump($relationship->getPropertyName());
                     $relationship->initializeCollection($object);
                     $relationship->addToCollection($object, $associatedObject);
                     /** @var RelationshipMetadata $inversedRelationship */

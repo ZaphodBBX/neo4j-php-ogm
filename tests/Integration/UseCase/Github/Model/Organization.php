@@ -70,6 +70,17 @@ class Organization
         return $this->members;
     }
 
+    public function getMember($login)
+    {
+        foreach ($this->members as $member) {
+            if ($member->getLogin() === $login) {
+                return $member;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @return \GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\Country
      */

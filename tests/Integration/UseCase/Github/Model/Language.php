@@ -64,4 +64,9 @@ class Language
     {
         return $this->repositories;
     }
+
+    public function addRepositoryWrittenIn(WrittenIn $writtenIn)
+    {
+        $this->repositories->add($writtenIn);
+    }
 }
