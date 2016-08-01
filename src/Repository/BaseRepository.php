@@ -436,7 +436,10 @@ class BaseRepository
                 continue;
             }
 
-            $map = $relationship->isCollection() ? $record->get($relId) : array($record->get($relId));
+            if (empty($record->get($relId))) {
+                continue;
+            }
+            $map = $relationship->isCollection() ? $record->get($relId) : $record->get($relId);
             foreach ($map as $info) {
                 /** @var Relationship $rel */
                 $rel = $info['rel'];
@@ -603,6 +606,9 @@ class BaseRepository
 
         // if considered lazy (example record fetched from a lazy collection, create lazy for relationships
         foreach ($classMetadata->getNonLazyRelationships() as $relationship) {
+            if (!$relationship->isCollection()) {
+                continue;
+            }
             if ($relationship->isRelationshipEntity()) {
                 $lazy = new LazyRelationshipCollection(
                     $this->entityManager,
@@ -624,7 +630,6 @@ class BaseRepository
                 $relationship->setValue($instance, $lazy);
             }
         }
-
 
         return $instance;
     }
@@ -758,8 +763,8 @@ class BaseRepository
         if (null !== $possibleRE = $this->entityManager->getUnitOfWork()->getRelationshipEntityById($relId)) {
             return $possibleRE;
         }
-        $start = $this->hydrateNode($reMap['start'], $startNodeMetadata->getClassName(), true);
-        $end = $this->hydrateNode($reMap['end'], $endNodeMetadata->getClassName(), true);
+        $start = $this->hydrateNodeRecord($reMap['start'], $startNodeMetadata->getClassName(), true);
+        $end = $this->hydrateNodeRecord($reMap['end'], $endNodeMetadata->getClassName(), true);
         $reInstance = $reMetadata->newInstance();
         $reMetadata->setId($reInstance, $relId);
         $reMetadata->setStartNodeProperty($reInstance, $start);

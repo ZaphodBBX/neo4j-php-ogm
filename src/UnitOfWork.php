@@ -504,7 +504,7 @@ class UnitOfWork
             if (null === $value || ($relationshipMetadata->isCollection() && count($value) === 0)) {
                 return;
             }
-            if ($relationshipMetadata->isCollection()) {
+            if ($value instanceof Collection) {
                 foreach ($value as $v) {
                     $this->persistRelationshipEntity($v, get_class($entity));
                     $rem = $this->entityManager->getRelationshipEntityMetadata(get_class($v));
@@ -513,7 +513,7 @@ class UnitOfWork
                 }
             } else {
                 $this->persistRelationshipEntity($value, get_class($entity));
-                $rem = $this->entityManager->getRelationshipEntityMetadata(get_class($value));
+                $rem = $this->entityManager->getClassMetadata(get_class($value));
                 $toPersistProperty = $rem->getStartNode() === $classMetadata->getClassName() ? $rem->getEndNodeValue($value) : $rem->getStartNodeValue($value);
                 $this->doPersist($toPersistProperty, $visited);
             }

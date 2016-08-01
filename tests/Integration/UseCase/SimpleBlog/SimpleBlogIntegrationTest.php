@@ -14,7 +14,11 @@ class SimpleBlogIntegrationTest extends IntegrationTestCase
         /** @var SimpleBlogUser $user */
         $user = $this->em->getRepository(SimpleBlogUser::class)->findOneBy('name', 'john');
         $name = $user->getName();
-        $this->assertEquals($name, $user->getPosts()[0]->getPost()->getPublication()->getUser()->getName());
+        $this->assertEquals($name, $user->getPosts()[0]
+            ->getPost()
+            ->getPublication()
+            ->getUser()
+            ->getName());
     }
 
     public function testInversedSideHydrationWhileLoadedSeparately()
