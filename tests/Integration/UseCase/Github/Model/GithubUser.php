@@ -189,4 +189,9 @@ class GithubUser
 
         return null;
     }
+
+    public function addStarred(GithubRepository $repository)
+    {
+        $this->starred->add($repository);
+    }
 }

@@ -56,6 +56,7 @@ class LazyRelationshipCollection extends AbstractLazyCollection
         foreach ($this->collection as $elt) {
             $oidKeys[] = spl_object_hash($elt);
         }
+        $i = 0;
         foreach ($instances as $instance) {
             if (!in_array(spl_object_hash($instance), $oidKeys)) {
                 if (!$this->relationshipMetadata->isRelationshipEntity()) {
@@ -65,6 +66,7 @@ class LazyRelationshipCollection extends AbstractLazyCollection
 
                 }
                 $this->collection[] = $instance;
+                ++$i;
             }
         }
     }

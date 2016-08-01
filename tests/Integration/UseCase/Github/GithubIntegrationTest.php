@@ -187,6 +187,30 @@ class GithubIntegrationTest extends IntegrationTestCase
         $this->assertEquals(100, $vince->getOwnedRepositories()[0]->getWrittenLanguage('json')->getLinesOfCode());
     }
 
+    public function testAddingStarred()
+    {
+        $this->clearDb();
+        $repo = new GithubRepository('neo4j-reco');
+        $user = new GithubUser('ikwattro');
+        $user2 = new GithubUser('alenegro81');
+        $this->em->persist($repo);
+        $this->em->persist($user);
+        $this->em->persist($user2);
+        $this->em->flush();
+        $this->em->clear();
+        /** @var GithubUser $ikwattro */
+        $ikwattro = $this->em->getRepository(GithubUser::class)->findOneBy('login', 'ikwattro');
+        /** @var GithubRepository $repo */
+        $repo = $this->em->getRepository(GithubRepository::class)->findOneBy('name', 'neo4j-reco');
+        $ikwattro->addStarred($repo);
+        $this->em->flush();
+        /** @var GithubUser $ale */
+        $ale = $this->em->getRepository(GithubUser::class)->findOneBy('login', 'alenegro81');
+        $ale->addStarred($repo);
+        $this->em->flush();
+        $this->assertGraphExist('(u:User {login:"ikwattro"})-[:STARS]->(r:Repository {name:"neo4j-reco"})<-[:STARS]-(u2:User {login:"alenegro81"})');
+    }
+
     /**
      * @param $login
      * @return \GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\GithubUser

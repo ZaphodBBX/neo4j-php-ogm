@@ -70,7 +70,7 @@ class RelationshipEntityFinder extends RelationshipsFinder
                 $reName = $split[0];
                 $v = $split[1];
                 if ($reMetadata->getStartNodePropertyName() === $reName || $reMetadata->getEndNodePropertyName() === $reName) {
-                    $orderProperty = $this->relationshipMetadata->getPropertyName() . '.' . $v;
+                    $orderProperty = 'end' . '.' . $v;
                 }
             } else {
                 if (null !== $reMetadata->getPropertyMetadata($this->relationshipMetadata->getOrderByPropery())) {

@@ -30,6 +30,7 @@ class RelationshipsFinder
         $identifier = sprintf('rel_%s_%s', $this->relationshipMetadata->getType(), $this->relationshipMetadata->getPropertyName());
 
         $statement = $this->buildStatement($fromId, $direction, $type, $identifier);
+        //var_dump($statement->text());
         $result = $this->em->getDatabaseDriver()->run($statement->text(), $statement->parameters());
 
         return $this->hydrateResult($result);
