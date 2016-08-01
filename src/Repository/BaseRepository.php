@@ -566,6 +566,11 @@ class BaseRepository
             }
         }
 
+        // Set labeled boolean properties from node record
+        foreach ($classMetadata->getLabeledProperties() as $labeledProperty) {
+            $labeledProperty->setLabel($instance, $node->hasLabel($labeledProperty->getLabelName()));
+        }
+
         // Set the node id
         $classMetadata->setId($instance, $nodeId);
 

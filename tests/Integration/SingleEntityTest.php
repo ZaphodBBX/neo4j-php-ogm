@@ -123,8 +123,7 @@ class SingleEntityTest extends IntegrationTestCase
         $this->em->clear();
         /** @var User $ikwattro */
         $ikwattro = $this->em->getRepository(User::class)->findOneBy('login', 'ikwattro');
-        // @todo bring back labels
-        //$this->assertTrue($ikwattro->isActive());
+        $this->assertTrue($ikwattro->isActive());
     }
 
     /**
@@ -138,8 +137,7 @@ class SingleEntityTest extends IntegrationTestCase
         $this->em->clear();
         /** @var User $ikwattro */
         $ikwattro = $this->em->getRepository(User::class)->findOneBy('login', 'ikwattro');
-        // @todo bring back labels
-        //$this->assertFalse($ikwattro->isActive());
+        $this->assertFalse($ikwattro->isActive());
     }
 
     /**
