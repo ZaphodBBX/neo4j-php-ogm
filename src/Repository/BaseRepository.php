@@ -405,12 +405,25 @@ class BaseRepository
         }
         $baseInstance = $this->hydrateNodeRecord($record->get($identifier));
         $this->entityManager->getUnitOfWork()->addManaged($baseInstance);
-        $this->hydrateNonLazyRelationshipReferences($baseInstance, $record);
+        $this->hydrateFetchedelationshipReferences($baseInstance, $record);
 
         return $baseInstance;
     }
 
-    private function hydrateNonLazyRelationshipReferences($object, Record $record)
+    public function setLazyLoadedInversed(RelationshipMetadata $relationshipMetadata, $baseInstance, $otherInstance)
+    {
+        $otherMetadata = $this->entityManager->getClassMetadata(get_class($otherInstance));
+        $inversedRelationship = $otherMetadata->getAssociationMappedByTargetField($relationshipMetadata->getPropertyName());
+        if (null !== $inversedRelationship) {
+            if ($inversedRelationship->isCollection()) {
+                $inversedRelationship->addToCollection($otherInstance, $baseInstance);
+            } else {
+                $inversedRelationship->setValue($otherInstance, $baseInstance);
+            }
+        }
+    }
+
+    private function hydrateFetchedelationshipReferences($object, Record $record)
     {
         foreach ($this->classMetadata->getSimpleRelationships(false) as $relationship) {
             $targetClass = $relationship->getTargetEntity();
@@ -429,6 +442,7 @@ class BaseRepository
                 if (!$relationship->isCollection()) {
                     $relationship->setValue($object, $associatedObject);
                 } else {
+                    var_dump($relationship->getPropertyName());
                     $relationship->initializeCollection($object);
                     $relationship->addToCollection($object, $associatedObject);
                     /** @var RelationshipMetadata $inversedRelationship */
@@ -440,6 +454,7 @@ class BaseRepository
                         } else if ($inversedRelationship->isLazy()) {
                             $inversedRelationship->addToCollection($associatedObject, $object);
                         } else {
+                            var_dump("not a collection");
                             $inversedRelationship->setValue($associatedObject, $object);
                         }
                     }

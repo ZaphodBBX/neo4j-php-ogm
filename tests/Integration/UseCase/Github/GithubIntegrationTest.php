@@ -61,7 +61,7 @@ class GithubIntegrationTest extends IntegrationTestCase
         $ikwattro = $this->em->getRepository(GithubUser::class)->findOneBy('login', 'ikwattro');
         $this->assertEquals('ikwattro', $ikwattro->getLogin());
         $this->assertEquals('neo4j consultant', $ikwattro->getDescription());
-        //$this->assertTrue($ikwattro->getOwnedRepositories() instanceof LazyRelationshipCollection);
+        $this->assertTrue($ikwattro->getOwnedRepositories() instanceof LazyRelationshipCollection);
         $ikwattro->setDescription("neo4j developer");
         $this->em->flush();
         $this->assertGraphExist('(u:User {login:"ikwattro", description:"neo4j developer"})');
@@ -80,7 +80,13 @@ class GithubIntegrationTest extends IntegrationTestCase
         /** @var GithubUser $ikwattro */
         $ikwattro = $this->em->getRepository(GithubUser::class)->findOneBy('login', 'ikwattro');
         $this->assertTrue($ikwattro->getOwnedRepositories()->first() instanceof GithubRepository);
+        $this->assertInstanceOf(LazyRelationshipCollection::class, $ikwattro->getOwnedRepositories());
         $this->assertEquals($ikwattro->getLogin(), $ikwattro->getOwnedRepositories()[0]->getOwner()->getLogin());
+        $repo = $ikwattro->getOwnedRepositories()[0];
+        $ikwattro->removeRepository($repo);
+        $this->assertCount(0, $ikwattro->getOwnedRepositories());
+        $this->em->flush();
+        $this->assertGraphNotExist('(u:User {login:"ikwattro"})-[:OWNS]->(r:Repository {name:"neo4j-reco"})');
     }
 
     /**

@@ -123,6 +123,19 @@ class GithubUser
         return $this->ownedRepositories;
     }
 
+    public function removeRepository(GithubRepository $repository)
+    {
+        if ($repository->getOwner()->getId() !== $this->getId()) {
+            return;
+        }
+
+        foreach ($this->ownedRepositories as $ownedRepository) {
+            if ($ownedRepository->getId() === $repository->getId()) {
+                $this->ownedRepositories->removeElement($ownedRepository);
+            }
+        }
+    }
+
     /**
      * @return \GraphAware\Neo4j\OGM\Common\Collection|\GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\GithubRepository[]
      */

@@ -60,6 +60,9 @@ class LazyRelationshipCollection extends AbstractLazyCollection
             if (!in_array(spl_object_hash($instance), $oidKeys)) {
                 if (!$this->relationshipMetadata->isRelationshipEntity()) {
                     $this->em->getUnitOfWork()->addManagedRelationshipReference($this->baseInstance, $instance, $this->relationshipMetadata->getPropertyName(), $this->relationshipMetadata);
+                    $repo = $this->em->getRepository(get_class($this->baseInstance));
+                    $repo->setLazyLoadedInversed($this->relationshipMetadata, $this->baseInstance, $instance);
+
                 }
                 $this->collection[] = $instance;
             }
