@@ -382,7 +382,11 @@ class UnitOfWork
 
     public function addManagedRelationshipEntity($entity, $pointOfView, $field)
     {
+
         $id = $this->entityManager->getRelationshipEntityMetadata(get_class($entity))->getIdValue($entity);
+        if (null === $id) {
+            throw new \RuntimeException('Relationship doesnt have an id hydrated');
+        }
         $oid = spl_object_hash($entity);
         $this->relationshipEntityStates[$oid] = self::STATE_MANAGED;
         $ref = clone $entity;

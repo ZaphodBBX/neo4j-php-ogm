@@ -61,7 +61,7 @@ class GithubUser
     /**
      * @var GithubUser[]|Collection
      *
-     * @OGM\Relationship(targetEntity="GithubUser", type="FOLLOWS", direction="OUTGOING", collection=true, mappedBy="follows")
+     * @OGM\Relationship(targetEntity="GithubUser", type="FOLLOWS", direction="INCOMING", collection=true, mappedBy="follows")
      * @OGM\Lazy()
      */
     private $followedBy;

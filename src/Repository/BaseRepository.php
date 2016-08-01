@@ -300,7 +300,7 @@ class BaseRepository
             $query .= ', ' . implode(', ', $assocReturns);
         }
 
-        print_r($query);
+        //print_r($query);
 
         $parameters = [$key => $value];
         $result = $this->entityManager->getDatabaseDriver()->run($query, $parameters);
@@ -452,6 +452,7 @@ class BaseRepository
 
                 $relInstance = $relationshipEntityMetadata->newInstance();
                 $this->hydrateRelationshipEntityProperties($relInstance, $relationshipEntityMetadata, $rel);
+                $this->entityManager->getUnitOfWork()->addManagedRelationshipEntity($relInstance, $object, $relationship->getPropertyName());
                 $startEntity = $this->hydrateNodeRecord($start, $relationshipEntityMetadata->getStartNode());
                 $endEntity = $this->hydrateNodeRecord($end, $relationshipEntityMetadata->getEndNode());
                 $relationshipEntityMetadata->setStartNodeProperty($relInstance, $startEntity);
@@ -471,7 +472,6 @@ class BaseRepository
                     if (null !== $inversedRelationship) {
                         $otherEntity = $relationship->isOutgoing() ? $endEntity : $startEntity;
                         if ($inversedRelationship->isCollection()) {
-                            $inversedRelationship->initializeCollection($otherEntity);
                             $inversedRelationship->addToCollection($otherEntity, $relInstance);
                         } else {
                             $inversedRelationship->setValue($otherEntity, $relInstance);
@@ -491,6 +491,7 @@ class BaseRepository
                 $propertyMetadata->setValue($object, $relationship->value($propertyMetadata->getPropertyName()));
             }
         }
+        $relationshipEntityMetadata->setId($object, $relationship->identity());
     }
 
     private function hydrateFetchedelationshipReferences($object, Record $record)
@@ -526,7 +527,6 @@ class BaseRepository
                         } else if ($inversedRelationship->isLazy()) {
                             $inversedRelationship->addToCollection($associatedObject, $object);
                         } else {
-                            var_dump("not a collection");
                             $inversedRelationship->setValue($associatedObject, $object);
                         }
                     }
@@ -576,6 +576,9 @@ class BaseRepository
         // initialize lazy for simple relationships
 
         foreach ($classMetadata->getLazyRelationships(false) as $relationship) {
+            if (null !== $relationship->getValue($instance)) {
+                continue;
+            }
             $lazy = new LazyRelationshipCollection(
                 $this->entityManager,
                 $instance,
@@ -583,6 +586,19 @@ class BaseRepository
                 $relationship
             );
             $relationship->setValue($instance, $lazy);
+        }
+
+        // initialize lazy for relationship entities
+        foreach ($classMetadata->getLazyRelationships(true) as $relationship) {
+            if ($relationship->isRelationshipEntity()) {
+                $lazy = new LazyRelationshipCollection(
+                    $this->entityManager,
+                    $instance,
+                    $relationship->getRelationshipEntityClass(),
+                    $relationship
+                );
+                $relationship->setValue($instance, $lazy);
+            }
         }
 
 

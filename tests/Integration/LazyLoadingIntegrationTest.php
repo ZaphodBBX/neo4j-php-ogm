@@ -75,6 +75,6 @@ class LazyLoadingIntegrationTest extends IntegrationTestCase
         }
         $this->em->persist($company);
         $this->em->flush();
-
+        $this->em->clear();
     }
 }

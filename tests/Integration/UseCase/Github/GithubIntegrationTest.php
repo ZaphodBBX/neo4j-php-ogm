@@ -136,6 +136,43 @@ class GithubIntegrationTest extends IntegrationTestCase
         $this->assertCount(1, $repo->getWrittenLanguages()[0]->getLanguage()->getRepositories()[0]->getRepository()->getWrittenLanguages());
         $this->assertEquals(3000, $repo->getWrittenLanguages()[0]->getLinesOfCode());
         $this->assertEquals(3000, $repo->getWrittenLanguages()[0]->getLanguage()->getRepositories()[0]->getRepository()->getWrittenLanguages()[0]->getLinesOfCode());
+        $this->assertInstanceOf(LazyRelationshipCollection::class, $repo->getWrittenLanguages()[0]->getLanguage()->getRepositories());
+    }
+
+    public function testFetchingLanguages()
+    {
+        $this->clearDb();
+        $this->client->run('CREATE (r:Repository {name:"neo4j-reco"})-[r2:WRITTEN_IN {linesOfCode: 3000}]->(l:Language {name:"java"}), 
+        (u:User {login:"ikwattro"})-[:OWNS]->(r)');
+        /** @var Language $language */
+        $language = $this->em->getRepository(Language::class)->findOneBy('name', 'java');
+        $this->assertNotNull($language);
+        $this->assertInstanceOf(LazyRelationshipCollection::class, $language->getRepositories());
+        $this->assertCount(1, $language->getRepositories());
+        $this->assertEquals('neo4j-reco', $language->getRepositories()[0]->getRepository()->getName());
+        $this->assertEquals('java', $language->getRepositories()[0]->getRepository()->getWrittenLanguages()[0]->getLanguage()->getName());
+        $this->assertCount(1, $language->getRepositories()[0]->getRepository()->getWrittenLanguages()[0]->getLanguage()->getRepositories());
+        $this->assertEquals(3000, $language->getRepositories()[0]->getLinesOfCode());
+        // This is a current known limitation
+        //$this->assertEquals('ikwattro', $language->getRepositories()[0]->getRepository()->getOwner()->getLogin());
+    }
+
+    public function testFollowsAndFollowedBy()
+    {
+        $this->clearDb();
+        $this->client->run('CREATE (n:User {login:"ikwattro"})-[:FOLLOWS]->(a:User {login:"alenegro81"})-[:FOLLOWS]->(m:User {login:"michal"}),
+        (a)-[:FOLLOWS]->(l:User {login:"luanne"})-[:FOLLOWS]->(n),
+        (l)-[:FOLLOWS]->(v:User {login:"vince"})');
+
+        /** @var GithubUser $ikwattro */
+        $ikwattro = $this->em->getRepository(GithubUser::class)->findOneBy('login', 'ikwattro');
+        $this->assertNotNull($ikwattro);
+        $this->assertInstanceOf(LazyRelationshipCollection::class, $ikwattro->getFollows());
+        $this->assertInstanceOf(LazyRelationshipCollection::class, $ikwattro->getFollowedBy());
+        $this->assertCount(1, $ikwattro->getFollows());
+        $this->assertCount(1, $ikwattro->getFollowedBy());
+        $this->assertCount(1, $ikwattro->getFollows());
+        $this->assertCount(2, $ikwattro->getFollows()[0]->getFollows());
     }
 
     /**

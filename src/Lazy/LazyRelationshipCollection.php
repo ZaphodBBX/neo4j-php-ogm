@@ -54,6 +54,7 @@ class LazyRelationshipCollection extends AbstractLazyCollection
         $instances = $this->finder->find($this->baseId);
         $oidKeys = [];
         foreach ($this->collection as $elt) {
+            var_dump("*" . $elt->getId());
             $oidKeys[] = spl_object_hash($elt);
         }
         foreach ($instances as $instance) {
