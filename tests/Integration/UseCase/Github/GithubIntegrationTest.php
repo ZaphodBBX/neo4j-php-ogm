@@ -162,7 +162,10 @@ class GithubIntegrationTest extends IntegrationTestCase
         $this->clearDb();
         $this->client->run('CREATE (n:User {login:"ikwattro"})-[:FOLLOWS]->(a:User {login:"alenegro81"})-[:FOLLOWS]->(m:User {login:"michal"}),
         (a)-[:FOLLOWS]->(l:User {login:"luanne"})-[:FOLLOWS]->(n),
-        (l)-[:FOLLOWS]->(v:User {login:"vince"})');
+        (l)-[:FOLLOWS]->(v:User {login:"vince"}),
+        (v)-[:MEMBER_OF]->(o:Organization {name:"GraphAware"}),
+        (v)-[:OWNS]->(r:Repository {name:"data-bridge"})-[:WRITTEN_IN {linesOfCode: 12000}]->(l1:Language {name:"java"}),
+        (r)-[:WRITTEN_IN {linesOfCode: 100}]->(l2:Language {name:"json"})');
 
         /** @var GithubUser $ikwattro */
         $ikwattro = $this->em->getRepository(GithubUser::class)->findOneBy('login', 'ikwattro');
@@ -171,8 +174,17 @@ class GithubIntegrationTest extends IntegrationTestCase
         $this->assertInstanceOf(LazyRelationshipCollection::class, $ikwattro->getFollowedBy());
         $this->assertCount(1, $ikwattro->getFollows());
         $this->assertCount(1, $ikwattro->getFollowedBy());
-        $this->assertCount(1, $ikwattro->getFollows());
-        $this->assertCount(2, $ikwattro->getFollows()[0]->getFollows());
+        $ale = $ikwattro->getFollows()[0];
+        $this->assertCount(2, $ale->getFollows());
+        $luanne = $ale->getFollow('luanne');
+        $this->assertEquals(spl_object_hash($ikwattro), spl_object_hash($luanne->getFollow('ikwattro')));
+        $this->assertCount(1, $luanne->getFollow('vince')->getOwnedRepositories());
+        $vince = $luanne->getFollow('vince');
+        $vince->setDescription("Senior Chimp");
+        $this->em->flush();
+        $this->assertGraphExist('(v:User {login:"vince", description:"Senior Chimp"})');
+        $this->assertCount(2, $vince->getOwnedRepositories()[0]->getWrittenLanguages());
+        $this->assertEquals(100, $vince->getOwnedRepositories()[0]->getWrittenLanguage('json')->getLinesOfCode());
     }
 
     /**

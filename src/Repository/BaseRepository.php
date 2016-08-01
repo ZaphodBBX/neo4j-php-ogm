@@ -546,7 +546,7 @@ class BaseRepository
         $this->entityManager->getUnitOfWork()->addManaged($object);
     }
 
-    private function hydrateNodeRecord(Node $node, $className = null)
+    private function hydrateNodeRecord(Node $node, $className = null, $andConsiderLazy = false)
     {
         $class = $className !== null ? $className : $this->className;
         $classMetadata = $this->entityManager->getClassMetadata($class);
@@ -595,6 +595,30 @@ class BaseRepository
                     $this->entityManager,
                     $instance,
                     $relationship->getRelationshipEntityClass(),
+                    $relationship
+                );
+                $relationship->setValue($instance, $lazy);
+            }
+        }
+
+        // if considered lazy (example record fetched from a lazy collection, create lazy for relationships
+        foreach ($classMetadata->getNonLazyRelationships() as $relationship) {
+            if ($relationship->isRelationshipEntity()) {
+                $lazy = new LazyRelationshipCollection(
+                    $this->entityManager,
+                    $instance,
+                    $relationship->getRelationshipEntityClass(),
+                    $relationship
+                );
+                $relationship->setValue($instance, $lazy);
+            } else {
+                if (null !== $relationship->getValue($instance)) {
+                    continue;
+                }
+                $lazy = new LazyRelationshipCollection(
+                    $this->entityManager,
+                    $instance,
+                    $relationship->getTargetEntity(),
                     $relationship
                 );
                 $relationship->setValue($instance, $lazy);

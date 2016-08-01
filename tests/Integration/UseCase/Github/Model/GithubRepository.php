@@ -88,4 +88,15 @@ class GithubRepository
         $this->writtenLanguages->add($writtenIn);
         $language->addRepositoryWrittenIn($writtenIn);
     }
+
+    public function getWrittenLanguage($language)
+    {
+        foreach ($this->writtenLanguages as $writtenIn) {
+            if ($writtenIn->getLanguage()->getName() === $language) {
+                return $writtenIn;
+            }
+        }
+
+        return null;
+    }
 }

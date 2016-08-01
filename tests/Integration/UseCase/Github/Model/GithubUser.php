@@ -175,4 +175,18 @@ class GithubUser
     {
         return $this->organizations;
     }
+
+    /**
+     * @param $login
+     */
+    public function getFollow($login)
+    {
+        foreach ($this->getFollows() as $follow) {
+            if ($follow->getLogin() === $login) {
+                return $follow;
+            }
+        }
+
+        return null;
+    }
 }

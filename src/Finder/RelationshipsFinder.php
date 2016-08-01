@@ -41,7 +41,7 @@ class RelationshipsFinder
         $instances = [];
 
         foreach ($result->records() as $record) {
-            $instances[] = $repo->hydrateRecord($record, 'end');
+            $instances[] = $repo->hydrateRecord($record, 'end', true);
         }
 
         return $instances;
