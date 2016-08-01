@@ -133,6 +133,9 @@ class GithubIntegrationTest extends IntegrationTestCase
         $repo = $this->em->getRepository(GithubRepository::class)->findOneBy('name', 'neo4j-reco');
         $this->assertEquals('ikwattro', $repo->getOwner()->getLogin());
         $this->assertCount(1, $repo->getWrittenLanguages());
+        $this->assertCount(1, $repo->getWrittenLanguages()[0]->getLanguage()->getRepositories()[0]->getRepository()->getWrittenLanguages());
+        $this->assertEquals(3000, $repo->getWrittenLanguages()[0]->getLinesOfCode());
+        $this->assertEquals(3000, $repo->getWrittenLanguages()[0]->getLanguage()->getRepositories()[0]->getRepository()->getWrittenLanguages()[0]->getLinesOfCode());
     }
 
     /**

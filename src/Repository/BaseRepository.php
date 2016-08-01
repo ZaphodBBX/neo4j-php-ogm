@@ -5,6 +5,7 @@ namespace GraphAware\Neo4j\OGM\Repository;
 use GraphAware\Common\Result\Record;
 use GraphAware\Common\Type\Node;
 use GraphAware\Common\Result\Result;
+use GraphAware\Common\Type\Relationship;
 use GraphAware\Neo4j\OGM\EntityManager;
 use GraphAware\Neo4j\OGM\Finder\RelationshipsFinder;
 use GraphAware\Neo4j\OGM\Lazy\LazyRelationshipCollection;
@@ -406,7 +407,7 @@ class BaseRepository
         $baseInstance = $this->hydrateNodeRecord($record->get($identifier));
         $this->entityManager->getUnitOfWork()->addManaged($baseInstance);
         $this->hydrateFetchedelationshipReferences($baseInstance, $record);
-        $this->hydrateFetchedelationshipReferences($baseInstance, $record);
+        $this->hydrateFetchedRelationshipEntities($baseInstance, $record);
 
         return $baseInstance;
     }
@@ -427,12 +428,67 @@ class BaseRepository
     private function hydrateFetchedRelationshipEntities($object, Record $record)
     {
         foreach ($this->classMetadata->getRelationshipEntities() as $relationship) {
-            $targetClass = $relationship->getTargetEntity();
-            $targetMetadata = $this->entityManager->getClassMetadata($targetClass);
-            $relId = sprintf('rel_%s_%s', strtolower($relationship->getPropertyName()), strtolower($relationship->getType()));
-            var_dump($relId);
+            $relationshipEntityClass = $relationship->getRelationshipEntityClass();
+            /** @var RelationshipEntityMetadata $relationshipEntityMetadata */
+            $relationshipEntityMetadata = $this->entityManager->getClassMetadata($relationshipEntityClass);
+            $relId = sprintf('rel_%s_%s', strtolower($relationship->getPropertyName()), strtolower($relationshipEntityMetadata->getType()));
             if (null === $record->get($relId, null)) {
                 continue;
+            }
+
+            $map = $relationship->isCollection() ? $record->get($relId) : array($record->get($relId));
+            foreach ($map as $info) {
+                /** @var Relationship $rel */
+                $rel = $info['rel'];
+                /** @var Node $start */
+                $start = $info['start'];
+                /** @var Node $end */
+                $end = $info['end'];
+
+                $id = $rel->identity();
+                if (null !== $this->entityManager->getUnitOfWork()->getRelationshipEntityById($id)) {
+                    continue;
+                }
+
+                $relInstance = $relationshipEntityMetadata->newInstance();
+                $this->hydrateRelationshipEntityProperties($relInstance, $relationshipEntityMetadata, $rel);
+                $startEntity = $this->hydrateNodeRecord($start, $relationshipEntityMetadata->getStartNode());
+                $endEntity = $this->hydrateNodeRecord($end, $relationshipEntityMetadata->getEndNode());
+                $relationshipEntityMetadata->setStartNodeProperty($relInstance, $startEntity);
+                $relationshipEntityMetadata->setEndNodeProperty($relInstance, $endEntity);
+                if (!$relationship->isCollection()) {
+                    $relationship->setValue($object, $relInstance);
+                } else {
+                    $relationship->addToCollection($object, $relInstance);
+                    $otherClass = $relationshipEntityMetadata->getStartNodePropertyName() === $relationship->getMappedByProperty()
+                        ? $relationshipEntityMetadata->getEndNode()
+                        : $relationshipEntityMetadata->getStartNode();
+                    $otherMetadata = $this->entityManager->getClassMetadata($otherClass);
+                    $otherMappedBy = $relationshipEntityMetadata->getStartNodePropertyName() === $relationship->getMappedByProperty()
+                        ? $relationshipEntityMetadata->getEndNodePropertyName()
+                        : $relationshipEntityMetadata->getStartNodePropertyName();
+                    $inversedRelationship = $otherMetadata->getAssociationMappedByTargetField($otherMappedBy);
+                    if (null !== $inversedRelationship) {
+                        $otherEntity = $relationship->isOutgoing() ? $endEntity : $startEntity;
+                        if ($inversedRelationship->isCollection()) {
+                            $inversedRelationship->initializeCollection($otherEntity);
+                            $inversedRelationship->addToCollection($otherEntity, $relInstance);
+                        } else {
+                            $inversedRelationship->setValue($otherEntity, $relInstance);
+                        }
+                    }
+
+                }
+            }
+
+        }
+    }
+
+    private function hydrateRelationshipEntityProperties($object, RelationshipEntityMetadata $relationshipEntityMetadata, Relationship $relationship)
+    {
+        foreach ($relationshipEntityMetadata->getPropertiesMetadata() as $propertyMetadata) {
+            if ($relationship->hasValue($propertyMetadata->getPropertyName())) {
+                $propertyMetadata->setValue($object, $relationship->value($propertyMetadata->getPropertyName()));
             }
         }
     }
@@ -526,7 +582,6 @@ class BaseRepository
                 $relationship->getTargetEntity(),
                 $relationship
             );
-            //$lazy->addInit($instance);
             $relationship->setValue($instance, $lazy);
         }
 
