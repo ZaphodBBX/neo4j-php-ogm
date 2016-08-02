@@ -297,5 +297,20 @@ final class NodeEntityMetadata extends GraphEntityMetadata
         return null;
     }
 
+    public function getPropertyValuesArray($object, $andLabeledProperties = true)
+    {
+        if (!$andLabeledProperties) {
+            return parent::getPropertyValuesArray($object, $andLabeledProperties);
+        }
+
+        $values = [];
+        /** @var EntityPropertyMetadata|LabeledPropertyMetadata $property */
+        foreach (array_merge($this->getPropertiesMetadata(), $this->getLabeledProperties()) as $property) {
+            $values[$property->getPropertyName()] = $property->getValue($object);
+        }
+
+        return $values;
+    }
+
 
 }

@@ -574,6 +574,9 @@ class BaseRepository
         // Set the node id
         $classMetadata->setId($instance, $nodeId);
 
+        // add as managed to the uow
+        $this->entityManager->getUnitOfWork()->addManaged($instance);
+
         // initialize collections on non-lazy relationships
         foreach ($classMetadata->getNonLazyRelationships() as $relationship) {
             if ($relationship->isCollection()) {

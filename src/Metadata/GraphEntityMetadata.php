@@ -178,7 +178,7 @@ abstract class GraphEntityMetadata implements ClassMetadata
      * @param object $object
      * @return array
      */
-    public function getPropertyValuesArray($object)
+    public function getPropertyValuesArray($object, $andLabeledProperties = true)
     {
         $values = [];
         foreach ($this->entityPropertiesMetadata as $entityPropertyMetadata) {

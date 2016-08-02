@@ -71,6 +71,8 @@ class FlushOperationProcessor
             $stack->push($statement['query'], ['nodes' => $statement['nodes']], $key);
         }
 
+        //print_r($stack);
+
         return $stack;
     }
 }

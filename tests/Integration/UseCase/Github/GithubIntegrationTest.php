@@ -43,6 +43,9 @@ class GithubIntegrationTest extends IntegrationTestCase
         $user->setDescription("neo4j consultant");
         $this->em->persist($user);
         $this->em->flush();
+        $repository = new GithubRepository('neo4j');
+        $user->addStarred($repository);
+        $this->em->flush();
         $this->assertGraphExist('(u:User {login:"ikwattro", description:"neo4j consultant"})');
         $user->setDescription("neo4j developer");
         $this->em->flush();
@@ -74,6 +77,7 @@ class GithubIntegrationTest extends IntegrationTestCase
         $this->clearDb();
         $user = $this->createUser('ikwattro');
         $repo = new GithubRepository('neo4j-reco', $user);
+        $this->em->persist($repo);
         $user->getOwnedRepositories()->add($repo);
         $this->em->flush();
         $this->assertGraphExist('(u:User {login:"ikwattro"})-[:OWNS]->(r:Repository {name:"neo4j-reco"})');
@@ -93,6 +97,17 @@ class GithubIntegrationTest extends IntegrationTestCase
         $this->assertGraphExist('(u:User {login:"ikwattro"}), (r:Repository {name:"neo4j-reco"})');
     }
 
+    public function testCommit()
+    {
+        $u1 = new GithubUser('login');
+        $u2 = new GithubUser('login2');
+        $u3 = new GithubUser('login3');
+        $this->em->persist($u1);
+        $this->em->persist($u2);
+        $this->em->persist($u3);
+        $this->em->flush();
+    }
+
     public function testFetchingFromOrganizationAndUpdates()
     {
         $this->clearDb();
@@ -108,6 +123,7 @@ class GithubIntegrationTest extends IntegrationTestCase
         $this->assertEquals('UK', $org->getCountry()->getName());
         $this->assertEquals('ikwattro', $org->getMember('ikwattro')->getOrganizations()[0]->getMember('ikwattro')->getOrganizations()[0]->getMember('ikwattro')->getLogin());
         $neo = new Organization("neo4j");
+        $this->em->persist($neo);
         $org->getMember('ikwattro')->addOrganization($neo);
         $this->em->flush();
         $this->assertGraphExist('(o:Organization {name:"GraphAware"})<-[:MEMBER_OF]-(u:User {login:"ikwattro"})-[:MEMBER_OF]->(o2:Organization {name:"neo4j"})');
@@ -209,6 +225,35 @@ class GithubIntegrationTest extends IntegrationTestCase
         $ale->addStarred($repo);
         $this->em->flush();
         $this->assertGraphExist('(u:User {login:"ikwattro"})-[:STARS]->(r:Repository {name:"neo4j-reco"})<-[:STARS]-(u2:User {login:"alenegro81"})');
+        $this->em->clear();
+        $vince = new GithubUser('vince');
+        $repo = $this->em->getRepository(GithubRepository::class)->findOneBy('name', 'neo4j-reco');
+        $vince->addStarred($repo);
+        $this->em->persist($vince);
+        $this->em->flush();
+        $this->assertGraphExist('(u:User {login:"vince"})-[:STARS]->(r:Repository {name:"neo4j-reco"})');
+    }
+
+    public function testGettingAllUsers()
+    {
+        $this->clearDb();
+        $this->client->run('CREATE (n:User {login:"ikwattro"})-[:FOLLOWS]->(a:User {login:"alenegro81"})-[:FOLLOWS]->(m:User {login:"michal"}),
+        (a)-[:FOLLOWS]->(l:User {login:"luanne"})-[:FOLLOWS]->(n),
+        (l)-[:FOLLOWS]->(v:User {login:"vince"}),
+        (v)-[:MEMBER_OF]->(o:Organization {name:"GraphAware"}),
+        (v)-[:OWNS]->(r:Repository {name:"data-bridge"})-[:WRITTEN_IN {linesOfCode: 12000}]->(l1:Language {name:"java"}),
+        (r)-[:WRITTEN_IN {linesOfCode: 100}]->(l2:Language {name:"json"})');
+
+        /** @var GithubUser[] $users */
+        $users = $this->em->getRepository(GithubUser::class)->findAll();
+        foreach ($users as $user) {
+            $this->assertInstanceOf(LazyRelationshipCollection::class, $user->getOwnedRepositories());
+            count($user->getFollows());
+            count($user->getFollowedBy());
+            $user->setDescription('wazaaaaaaaaaa!!');
+            $this->em->persist($user);
+        }
+        $this->em->flush();
     }
 
     /**

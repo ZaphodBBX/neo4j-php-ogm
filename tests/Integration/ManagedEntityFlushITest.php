@@ -31,6 +31,7 @@ class ManagedEntityFlushITest extends IntegrationTestCase
         $this->assertGraphExist('(u:User:Active {login:"ikwattro"})');
         $user->setInactive();
         $this->assertFalse($user->isActive());
+        $this->em->persist($user);
         $this->em->flush();
         $this->assertGraphNotExist('(u:User:Active {login:"ikwattro"})');
     }
