@@ -332,12 +332,6 @@ class UnitOfWork
             = array();
     }
 
-    private function manageEntityReference($oid, & $entity)
-    {
-        $id = $this->entityIds[$oid];
-        $this->entityStateReferences[$id] = clone $entity;
-    }
-
     public function detectEntityChanges()
     {
         $managed = [];
@@ -649,7 +643,6 @@ class UnitOfWork
      */
     public function getEntityById($id)
     {
-        //var_dump($id);
         return isset($this->entitiesById[$id]) ? $this->entitiesById[$id] : null;
     }
 
@@ -683,6 +676,12 @@ class UnitOfWork
         return $this->relationshipEntityPersisters[$class];
     }
 
+    /**
+     *
+     * @todo should be replaced by GraphEntityMetadata::setIdValue()
+     * @param $oid
+     * @param $gid
+     */
     public function hydrateGraphId($oid, $gid)
     {
         $refl0 = new \ReflectionObject($this->nodesScheduledForCreate[$oid]);
