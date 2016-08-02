@@ -73,6 +73,13 @@ class GithubUser
      */
     private $organizations;
 
+    /**
+     * @var UserTeam
+     *
+     * @OGM\Relationship(relationshipEntity="UserTeam", direction="OUTGOING", mappedBy="user", collection=false)
+     */
+    private $userTeam;
+
     public function __construct($login)
     {
         $this->login = $login;
@@ -193,5 +200,21 @@ class GithubUser
     public function addStarred(GithubRepository $repository)
     {
         $this->starred->add($repository);
+    }
+
+    /**
+     * @return \GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\UserTeam
+     */
+    public function getUserTeam()
+    {
+        return $this->userTeam;
+    }
+
+    /**
+     * @param \GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\UserTeam $userTeam
+     */
+    public function setUserTeam($userTeam)
+    {
+        $this->userTeam = $userTeam;
     }
 }

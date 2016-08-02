@@ -430,21 +430,37 @@ class UnitOfWork
     private function checkRelationshipEntityDeletions($entity)
     {
         $oid = spl_object_hash($entity);
+        /** @var RelationshipEntityMetadata $reMetadata */
+        $reMetadata = $this->entityManager->getClassMetadata(get_class($entity));
         $id = $this->entityManager->getRelationshipEntityMetadata(get_class($entity))->getIdValue($entity);
+        $startNodeMetadata = $this->entityManager->getClassMetadata($reMetadata->getStartNode());
         foreach ($this->managedRelationshipEntitiesMap[$oid] as $pov => $field) {
+            // point of view node
             $e = $this->entitiesById[$this->entityIds[$pov]];
-            $entityMetadata = $this->entityManager->getClassMetadataFor(get_class($e));
-            $values = $entityMetadata->getRelationship($field)->getValue($e);
-            $shouldBeDeleted = true;
-            foreach ($values as $v) {
-                $id2 = $this->entityManager->getRelationshipEntityMetadata(get_class($entity))->getIdValue($v);
-                if ($id2 === $id) {
+            $nodeMetadata = $this->entityManager->getClassMetadata(get_class($e));
+            $propertyMeta = $nodeMetadata->getRelationship($field);
+            $values = $nodeMetadata->getRelationship($field)->getValue($e);
+            $shouldBeDeleted = false;
+            if (!$propertyMeta->isCollection()) {
+                $value = $propertyMeta->getValue($e);
+                if (is_object($e) && $reMetadata->getIdValue($value) === $id) {
                     $shouldBeDeleted = false;
+                } else {
+                    $shouldBeDeleted = true;
+                }
+            } else {
+                $shouldBeDeleted = true;
+                foreach ($values as $v) {
+                    $id2 = $this->entityManager->getRelationshipEntityMetadata(get_class($entity))->getIdValue($v);
+                    if ($id2 === $id) {
+                        $shouldBeDeleted = false;
+                    }
                 }
             }
             if ($shouldBeDeleted) {
                 $this->relEntitesScheduledForDelete[] = $entity;
             }
+
         }
     }
 

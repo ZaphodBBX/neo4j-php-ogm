@@ -4,6 +4,7 @@ namespace GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github;
 
 use GraphAware\Neo4j\OGM\Lazy\LazyRelationshipCollection;
 use GraphAware\Neo4j\OGM\Tests\Integration\IntegrationTestCase;
+use GraphAware\Neo4j\OGM\Tests\Integration\Model\Repository;
 use GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\GithubRepository;
 use GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\GithubUser;
 use GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\Language;
@@ -254,6 +255,20 @@ class GithubIntegrationTest extends IntegrationTestCase
             $this->em->persist($user);
         }
         $this->em->flush();
+    }
+
+    public function testAddingRelationshipEntities()
+    {
+        $this->clearDb();
+        $this->client->run('CREATE (n:User {login:"ikwattro"})-[:MEMBER_OF]->(o:Organization {name:"GraphAware"}), (n)-[:IN_TEAM {since:123455}]->(t:Team {name:"team1"})');
+        /** @var GithubUser $user */
+        $user = $this->em->getRepository(GithubUser::class)->findOneBy('login', 'ikwattro');
+        $repository = new GithubRepository('neo4j-reco');
+        $language = new Language('java');
+        $repository->addLangage($language, 3000);
+        $user->getOwnedRepositories()->add($repository);
+        $this->em->flush();
+        $this->assertGraphExist('(u:User {login:"ikwattro"})-[:IN_TEAM]->(t:Team {name:"team1"})');
     }
 
     /**
