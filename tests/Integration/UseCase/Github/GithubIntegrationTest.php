@@ -271,6 +271,18 @@ class GithubIntegrationTest extends IntegrationTestCase
         $this->assertGraphExist('(u:User {login:"ikwattro"})-[:IN_TEAM]->(t:Team {name:"team1"})');
     }
 
+    public function testSingleRelationshipsOnRelatedEntitiesAreProxied()
+    {
+        $this->clearDb();
+        $this->client->run('CREATE (n:User {login:"ikwattro"})-[:MEMBER_OF]->(o:Organization {name:"GraphAware"})-[:IN_COUNTRY]->(c:Country {name:"UK"})');
+        /** @var GithubUser $user */
+        $user = $this->em->getRepository(GithubUser::class)->findOneBy('login', 'ikwattro');
+        $this->assertInstanceOf(GithubUser::class, $user);
+        $this->assertInstanceOf(Organization::class, $user->getOrganizations()[0]);
+        $this->assertEquals('GraphAware', $user->getOrganizations()[0]->getName());
+        $this->assertEquals('UK', $user->getOrganizations()[0]->getCountry()->getName());
+    }
+
     /**
      * @param $login
      * @return \GraphAware\Neo4j\OGM\Tests\Integration\UseCase\Github\Model\GithubUser

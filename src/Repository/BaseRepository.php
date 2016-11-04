@@ -613,29 +613,31 @@ class BaseRepository
         }
 
         // if considered lazy (example record fetched from a lazy collection, create lazy for relationships
-        foreach ($classMetadata->getNonLazyRelationships() as $relationship) {
-            if (!$relationship->isCollection()) {
-                continue;
-            }
-            if ($relationship->isRelationshipEntity()) {
-                $lazy = new LazyRelationshipCollection(
-                    $this->entityManager,
-                    $instance,
-                    $relationship->getRelationshipEntityClass(),
-                    $relationship
-                );
-                $relationship->setValue($instance, $lazy);
-            } else {
-                if (null !== $relationship->getValue($instance)) {
+        if ($andConsiderLazy) {
+            foreach ($classMetadata->getNonLazyRelationships() as $relationship) {
+                if (!$relationship->isCollection()) {
                     continue;
                 }
-                $lazy = new LazyRelationshipCollection(
-                    $this->entityManager,
-                    $instance,
-                    $relationship->getTargetEntity(),
-                    $relationship
-                );
-                $relationship->setValue($instance, $lazy);
+                if ($relationship->isRelationshipEntity()) {
+                    $lazy = new LazyRelationshipCollection(
+                        $this->entityManager,
+                        $instance,
+                        $relationship->getRelationshipEntityClass(),
+                        $relationship
+                    );
+                    $relationship->setValue($instance, $lazy);
+                } else {
+                    if (null !== $relationship->getValue($instance)) {
+                        continue;
+                    }
+                    $lazy = new LazyRelationshipCollection(
+                        $this->entityManager,
+                        $instance,
+                        $relationship->getTargetEntity(),
+                        $relationship
+                    );
+                    $relationship->setValue($instance, $lazy);
+                }
             }
         }
 
