@@ -240,66 +240,66 @@ class BaseRepository
         $label = $this->classMetadata->getLabel();
         $idId = $isId ? 'id(n)' : sprintf('n.%s', $key);
         $query = sprintf('MATCH (n:%s) WHERE %s = {%s}', $label, $idId, $key);
-        /** @var \GraphAware\Neo4j\OGM\Metadata\RelationshipMetadata[] $associations */
-        $associations = $this->classMetadata->getNonLazyRelationships();
-        $assocReturns = [];
-        foreach ($associations as $identifier => $association) {
-            $type = $association->isRelationshipEntity() ? $this->entityManager->getRelationshipEntityMetadata($association->getRelationshipEntityClass())->getType() : $association->getType();
-            switch ($association->getDirection()) {
-                case 'INCOMING':
-                    $relStr = '<-[rel_%s:%s]-';
-                    break;
-                case 'OUTGOING':
-                    $relStr = '-[rel_%s:%s]->';
-                    break;
-                default:
-                    $relStr = '-[rel_%s:%s]-';
-                    break;
-            }
-
-            $relationshipIdentifier = sprintf('%s_%s', strtolower($association->getPropertyName()), strtolower($type));
-            $relQueryPart = sprintf($relStr, $relationshipIdentifier, $type);
-            $query .= PHP_EOL;
-            $query .= 'OPTIONAL MATCH (n)'.$relQueryPart.'('.$association->getPropertyName().')';
-            $query .= ' WITH n, ';
-            $query .= implode(', ', $assocReturns);
-            if (!empty($assocReturns)) {
-                $query .= ', ';
-            }
-            $relid = 'rel_'.$relationshipIdentifier;
-            if ($association->hasOrderBy()) {
-                $orderProperty = $association->getPropertyName().'.'.$association->getOrderByPropery();
-                if ($association->isRelationshipEntity()) {
-                    $reMetadata = $this->entityManager->getRelationshipEntityMetadata($association->getRelationshipEntityClass());
-                    $split = explode('.', $association->getOrderByPropery());
-                    if (count($split) > 1) {
-                        $reName = $split[0];
-                        $v = $split[1];
-                        if ($reMetadata->getStartNodePropertyName() === $reName || $reMetadata->getEndNodePropertyName() === $reName) {
-                            $orderProperty = $association->getPropertyName().'.'.$v;
-                        }
-                    } else {
-                        if (null !== $reMetadata->getPropertyMetadata($association->getOrderByPropery())) {
-                            $orderProperty = $relid.'.'.$association->getOrderByPropery();
-                        }
-                    }
-                }
-                $query .= $relid.', '.$association->getPropertyName().' ORDER BY '.$orderProperty.' '.$association->getOrder();
-                $query .= PHP_EOL;
-                $query .= ' WITH n, ';
-                $query .= implode(', ', $assocReturns);
-                if (!empty($assocReturns)) {
-                    $query .= ', ';
-                }
-            }
-            if ($association->isCollection() || $association->isRelationshipEntity()) {
-                $query .= sprintf(' CASE count(%s) WHEN 0 THEN [] ELSE collect({start:startNode(%s), end:endNode(%s), rel:%s}) END as %s', $relid, $relid, $relid, $relid, $relid);
-                $assocReturns[] = $relid;
-            } else {
-                $query .= $association->getPropertyName();
-                $assocReturns[] = $association->getPropertyName();
-            }
-        }
+//        /** @var \GraphAware\Neo4j\OGM\Metadata\RelationshipMetadata[] $associations */
+//        $associations = $this->classMetadata->getNonLazyRelationships();
+//        $assocReturns = [];
+//        foreach ($associations as $identifier => $association) {
+//            $type = $association->isRelationshipEntity() ? $this->entityManager->getRelationshipEntityMetadata($association->getRelationshipEntityClass())->getType() : $association->getType();
+//            switch ($association->getDirection()) {
+//                case 'INCOMING':
+//                    $relStr = '<-[rel_%s:%s]-';
+//                    break;
+//                case 'OUTGOING':
+//                    $relStr = '-[rel_%s:%s]->';
+//                    break;
+//                default:
+//                    $relStr = '-[rel_%s:%s]-';
+//                    break;
+//            }
+//
+//            $relationshipIdentifier = sprintf('%s_%s', strtolower($association->getPropertyName()), strtolower($type));
+//            $relQueryPart = sprintf($relStr, $relationshipIdentifier, $type);
+//            $query .= PHP_EOL;
+//            $query .= 'OPTIONAL MATCH (n)'.$relQueryPart.'('.$association->getPropertyName().')';
+//            $query .= ' WITH n, ';
+//            $query .= implode(', ', $assocReturns);
+//            if (!empty($assocReturns)) {
+//                $query .= ', ';
+//            }
+//            $relid = 'rel_'.$relationshipIdentifier;
+//            if ($association->hasOrderBy()) {
+//                $orderProperty = $association->getPropertyName().'.'.$association->getOrderByPropery();
+//                if ($association->isRelationshipEntity()) {
+//                    $reMetadata = $this->entityManager->getRelationshipEntityMetadata($association->getRelationshipEntityClass());
+//                    $split = explode('.', $association->getOrderByPropery());
+//                    if (count($split) > 1) {
+//                        $reName = $split[0];
+//                        $v = $split[1];
+//                        if ($reMetadata->getStartNodePropertyName() === $reName || $reMetadata->getEndNodePropertyName() === $reName) {
+//                            $orderProperty = $association->getPropertyName().'.'.$v;
+//                        }
+//                    } else {
+//                        if (null !== $reMetadata->getPropertyMetadata($association->getOrderByPropery())) {
+//                            $orderProperty = $relid.'.'.$association->getOrderByPropery();
+//                        }
+//                    }
+//                }
+//                $query .= $relid.', '.$association->getPropertyName().' ORDER BY '.$orderProperty.' '.$association->getOrder();
+//                $query .= PHP_EOL;
+//                $query .= ' WITH n, ';
+//                $query .= implode(', ', $assocReturns);
+//                if (!empty($assocReturns)) {
+//                    $query .= ', ';
+//                }
+//            }
+//            if ($association->isCollection() || $association->isRelationshipEntity()) {
+//                $query .= sprintf(' CASE count(%s) WHEN 0 THEN [] ELSE collect({start:startNode(%s), end:endNode(%s), rel:%s}) END as %s', $relid, $relid, $relid, $relid, $relid);
+//                $assocReturns[] = $relid;
+//            } else {
+//                $query .= $association->getPropertyName();
+//                $assocReturns[] = $association->getPropertyName();
+//            }
+//        }
 
         $query .= PHP_EOL;
         $query .= 'RETURN n';
@@ -311,6 +311,16 @@ class BaseRepository
 
         $parameters = [$key => $value];
         $result = $this->entityManager->getDatabaseDriver()->run($query, $parameters);
+
+        $instances = [];
+        foreach ($result->records() as $record) {
+            $instance = $this->entityManager->getProxyFactory($this->classMetadata)->fromNode($record->get('n'));
+            $this->hydrateProperties($instance, $record->get('n'));
+            $instances[] = $instance;
+
+        }
+
+        return $instances;
 
         return $this->hydrateResultSet($result);
     }
@@ -686,22 +696,7 @@ class BaseRepository
         }
 
         $instance = $cm->newInstance();
-        foreach ($cm->getPropertiesMetadata() as $field => $meta) {
-            if ($meta instanceof EntityPropertyMetadata) {
-                if ($node->hasValue($field)) {
-                    $meta->setValue($instance, $node->value($field));
-                }
-            } elseif ($meta instanceof Label) {
-                $label = $meta->name;
-                /*
-                $v = $node->hasLabel($label);
-                if ($property = $reflClass->getProperty($field)) {
-                    $property->setAccessible(true);
-                    $property->setValue($instance, $v);
-                }
-                */
-            }
-        }
+
 
         foreach ($cm->getLabeledProperties() as $labeledProperty) {
             $v = $node->hasLabel($labeledProperty->getLabelName()) ? true : false;
@@ -714,10 +709,27 @@ class BaseRepository
             }
         }
 
-        $cm->setId($instance, $node->identity());
+        $this->hydrateProperties($instance, $node, $cm);
         $this->entityManager->getUnitOfWork()->addManaged($instance);
 
         return $instance;
+    }
+
+    private function hydrateProperties($object, Node $node, NodeEntityMetadata $metadata = null)
+    {
+        $instance = $object;
+        $cm = null !== $metadata ? $metadata : $this->classMetadata;
+        foreach ($cm->getPropertiesMetadata() as $field => $meta) {
+            if ($meta instanceof EntityPropertyMetadata) {
+                if ($node->hasValue($field)) {
+                    $meta->setValue($instance, $node->value($field));
+                }
+            } elseif ($meta instanceof Label) {
+                // @todo
+            }
+        }
+
+        $cm->setId($instance, $node->identity());
     }
 
     public function setInversedAssociation($baseInstance, $otherInstance, $relationshipKey)
