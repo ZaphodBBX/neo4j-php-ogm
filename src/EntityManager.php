@@ -114,7 +114,9 @@ class EntityManager implements ObjectManager
         $this->uow = new UnitOfWork($this);
         $this->databaseDriver = $databaseDriver;
         $this->metadataFactory = new GraphEntityMetadataFactory($this->annotationDriver->getReader());
-        $this->proxyDirectory = null !== $cacheDirectory ? $cacheDirectory.DIRECTORY_SEPARATOR.'proxy' : $cacheDirectory.DIRECTORY_SEPARATOR.'proxy';
+        $this->proxyDirectory = null !== $cacheDirectory
+            ? $cacheDirectory.DIRECTORY_SEPARATOR.'proxy'
+            : sys_get_temp_dir().DIRECTORY_SEPARATOR.'proxy';
     }
 
     /**
