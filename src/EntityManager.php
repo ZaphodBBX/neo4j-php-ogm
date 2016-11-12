@@ -315,7 +315,7 @@ class EntityManager implements ObjectManager
     /**
      * @return string
      */
-    public function getProxyDirectory(): string
+    public function getProxyDirectory()
     {
         return $this->proxyDirectory;
     }
