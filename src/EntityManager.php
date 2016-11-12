@@ -65,6 +65,11 @@ class EntityManager implements ObjectManager
     protected $eventManager;
 
     /**
+     * @var string
+     */
+    protected $proxyDirectory;
+
+    /**
      * @param string            $host
      * @param string|null       $cacheDir
      * @param EventManager|null $eventManager
@@ -102,6 +107,7 @@ class EntityManager implements ObjectManager
         $this->uow = new UnitOfWork($this);
         $this->databaseDriver = $databaseDriver;
         $this->metadataFactory = new GraphEntityMetadataFactory($this->annotationDriver->getReader());
+        $this->proxyDirectory = null !== $cacheDirectory ? $cacheDirectory.DIRECTORY_SEPARATOR.'proxy' : $cacheDirectory.DIRECTORY_SEPARATOR.'proxy';
     }
 
     /**
@@ -295,5 +301,13 @@ class EntityManager implements ObjectManager
     {
         $this->uow = null;
         $this->uow = new UnitOfWork($this);
+    }
+
+    /**
+     * @return string
+     */
+    public function getProxyDirectory(): string
+    {
+        return $this->proxyDirectory;
     }
 }
