@@ -47,6 +47,11 @@ final class RelationshipMetadata
     private $isLazy;
 
     /**
+     * @var bool
+     */
+    private $isFetch;
+
+    /**
      * @var OrderBy
      */
     private $orderBy;
@@ -57,13 +62,14 @@ final class RelationshipMetadata
      * @param \GraphAware\Neo4j\OGM\Annotations\Relationship $relationshipAnnotation
      * @param bool                                           $isLazy
      */
-    public function __construct($className, \ReflectionProperty $reflectionProperty, Relationship $relationshipAnnotation, $isLazy = false, OrderBy $orderBy = null)
+    public function __construct($className, \ReflectionProperty $reflectionProperty, Relationship $relationshipAnnotation, $isLazy = false, $isFetch = false, OrderBy $orderBy = null)
     {
         $this->className = $className;
         $this->propertyName = $reflectionProperty->getName();
         $this->reflectionProperty = $reflectionProperty;
         $this->relationshipAnnotation = $relationshipAnnotation;
         $this->isLazy = $isLazy;
+        $this->isFetch = $isFetch;
         $this->orderBy = $orderBy;
         if (null !== $orderBy) {
             if (!in_array($orderBy->order, ['ASC', 'DESC'], true)) {
@@ -118,6 +124,14 @@ final class RelationshipMetadata
     public function isLazy()
     {
         return $this->isLazy;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isFetch()
+    {
+        return $this->isFetch;
     }
 
     /**
