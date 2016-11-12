@@ -19,8 +19,10 @@ use GraphAware\Neo4j\OGM\Exception\MappingException;
 use GraphAware\Neo4j\OGM\Mapping\AnnotationDriver;
 use GraphAware\Neo4j\OGM\Metadata\Factory\GraphEntityMetadataFactory;
 use GraphAware\Neo4j\OGM\Metadata\GraphEntityMetadata;
+use GraphAware\Neo4j\OGM\Metadata\NodeEntityMetadata;
 use GraphAware\Neo4j\OGM\Metadata\QueryResultMapper;
 use GraphAware\Neo4j\OGM\Metadata\RelationshipEntityMetadata;
+use GraphAware\Neo4j\OGM\Proxy\ProxyFactory;
 use GraphAware\Neo4j\OGM\Repository\BaseRepository;
 use GraphAware\Neo4j\OGM\Util\ClassUtils;
 
@@ -68,6 +70,11 @@ class EntityManager implements ObjectManager
      * @var string
      */
     protected $proxyDirectory;
+
+    /**
+     * @var array
+     */
+    protected $proxyFactories = [];
 
     /**
      * @param string            $host
@@ -309,5 +316,14 @@ class EntityManager implements ObjectManager
     public function getProxyDirectory(): string
     {
         return $this->proxyDirectory;
+    }
+
+    public function getProxyFactory(NodeEntityMetadata $entityMetadata)
+    {
+        if (!array_key_exists($entityMetadata->getClassName(), $this->proxyFactories)) {
+            $this->proxyFactories[$entityMetadata->getClassName()] = new ProxyFactory($this, $entityMetadata);
+        }
+
+        return $this->proxyFactories[$entityMetadata->getClassName()];
     }
 }
