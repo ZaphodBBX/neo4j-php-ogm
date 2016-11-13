@@ -119,7 +119,7 @@ class BaseRepository
         }
 
         /** @var RelationshipMetadata[] $associations */
-        $associations = $this->classMetadata->getRelationships();
+        $associations = $this->classMetadata->getFetchRelationships();
         $assocReturns = [];
         foreach ($associations as $identifier => $association) {
             $type = $association->isRelationshipEntity() ? $this->entityManager->getRelationshipEntityMetadata($association->getRelationshipEntityClass())->getType() : $association->getType();
@@ -224,7 +224,17 @@ class BaseRepository
 
         $result = $this->entityManager->getDatabaseDriver()->run($query, $parameters, json_encode($tag));
 
-        return $this->hydrateResultSet($result);
+        $instances = [];
+        foreach ($result->records() as $record) {
+            $instance = $this->entityManager->getProxyFactory($this->classMetadata)->fromNode($record->get('n'));
+            $this->hydrateProperties($instance, $record->get('n'));
+            $this->hydrateFetchRelationships($instance, $record);
+            $this->entityManager->getUnitOfWork()->addManaged($instance);
+            $instances[] = $instance;
+
+        }
+
+        return $instances;
     }
 
     /**
@@ -317,6 +327,7 @@ class BaseRepository
             $instance = $this->entityManager->getProxyFactory($this->classMetadata)->fromNode($record->get('n'));
             $this->hydrateProperties($instance, $record->get('n'));
             $this->hydrateFetchRelationships($instance, $record);
+            $this->entityManager->getUnitOfWork()->addManaged($instance);
             $instances[] = $instance;
 
         }
@@ -340,6 +351,7 @@ class BaseRepository
                 $this->hydrateProperties($otherInstance, $record->get($identifier), $otherNodeMeta);
                 $this->entityManager->getUnitOfWork()->addManaged($otherInstance);
                 $relationship->setValue($instance, $otherInstance);
+                $this->entityManager->getUnitOfWork()->addManagedRelationshipReference($instance, $otherInstance, $relationship->getPropertyName(), $relationship);
             }
         }
     }
@@ -734,7 +746,7 @@ class BaseRepository
         return $instance;
     }
 
-    private function hydrateProperties($object, Node $node, NodeEntityMetadata $metadata = null)
+    public function hydrateProperties($object, Node $node, NodeEntityMetadata $metadata = null)
     {
         $instance = $object;
         $cm = null !== $metadata ? $metadata : $this->classMetadata;
@@ -773,7 +785,7 @@ class BaseRepository
                     $lazy = new LazyRelationshipCollection($this->entityManager, $otherInstance, $mt->getTargetEntity(), $mt, $baseInstance);
                     $property->setValue($otherInstance, $lazy);
                 } else {
-                    $property->getValue($otherInstance)->addInit($baseInstance);
+                    $property->getValue($otherInstance)->add($baseInstance);
                 }
             } else {
                 $property->setValue($otherInstance, $baseInstance);
