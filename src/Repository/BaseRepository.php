@@ -308,8 +308,7 @@ class BaseRepository
         }
 
         //print_r($query);
-
-        $parameters = [$key => $value];
+        $parameters = [$key => ( $isId ) ? intval($value) : $value];
         $result = $this->entityManager->getDatabaseDriver()->run($query, $parameters);
 
         return $this->hydrateResultSet($result);
